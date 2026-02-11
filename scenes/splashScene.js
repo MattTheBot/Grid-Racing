@@ -92,7 +92,7 @@ export function createSplashScene(engine, canvas) {
   nodeMaterial.build();
 
   // Load background model
-  BABYLON.SceneLoader.ImportMesh("", "assets/models/", "car.glb", scene, function(meshes) {
+  BABYLON.SceneLoader.ImportMesh("", "assets/models/", "trashcan.glb", scene, function(meshes) {
     if (meshes.length > 0) {
       const backgroundModel = meshes[0];
       backgroundModel.material = nodeMaterial;
