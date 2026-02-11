@@ -1,66 +1,145 @@
 // Main entry point for Grid Racing game
-import { createSplashScene } from './scenes/splashScene.js';
+
+function showError(msg) {
+  const errDiv = document.getElementById('errorDisplay');
+  if (errDiv) {
+    errDiv.style.display = 'block';
+    errDiv.innerHTML += msg + '<br/>';
+  }
+  console.error(msg);
+}
+
+window.onerror = function(msg, url, lineNo, colNo, error) {
+  showError('ERROR: ' + msg);
+  return true;
+};
 
 try {
+  showError('Initializing...');
+  
   const canvas = document.getElementById('renderCanvas');
   if (!canvas) {
-    throw new Error('Canvas element not found!');
+    throw new Error('Canvas not found');
   }
   
-  console.log('Canvas found:', canvas);
-  console.log('BABYLON:', typeof BABYLON);
+  if (typeof BABYLON === 'undefined') {
+    throw new Error('Babylon.js not loaded');
+  }
   
+  showError('Creating engine...');
   const engine = new BABYLON.Engine(canvas, true);
-  console.log('Engine created');
   
-  // Create and display splash scene
-  const splashScene = createSplashScene(engine, canvas);
-  console.log('Splash scene created');
+  // Create scene manually
+  const scene = new BABYLON.Scene(engine);
+  scene.clearColor = new BABYLON.Color4(0.2, 0.2, 0.2, 1);
   
-  // Add diagnostics display
-  const debugDiv = document.createElement('div');
-  debugDiv.style.position = 'absolute';
-  debugDiv.style.top = '10px';
-  debugDiv.style.left = '10px';
-  debugDiv.style.color = '#fff';
-  debugDiv.style.backgroundColor = 'rgba(0,0,0,0.7)';
-  debugDiv.style.padding = '10px';
-  debugDiv.style.fontFamily = 'monospace';
-  debugDiv.style.fontSize = '12px';
-  debugDiv.style.zIndex = '1000';
-  debugDiv.innerHTML = `
-    Canvas: ${canvas.width}x${canvas.height}<br/>
-    Scene meshes: ${splashScene.meshes.length}<br/>
-    Engine FPS: <span id="fps">-</span>
-  `;
-  document.body.appendChild(debugDiv);
+  showError('Setting up camera...');
+  const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 2, -8));
+  camera.attachControl(canvas, true);
   
-  // Update FPS
-  setInterval(() => {
-    const fpsSpan = document.getElementById('fps');
-    if (fpsSpan) fpsSpan.textContent = engine.getFps().toFixed(0);
-  }, 500);
+  showError('Adding lights...');
+  const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+  light1.intensity = 1.2;
   
-  // Resize handler
+  const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(5, 5, 5), scene);
+  light2.intensity = 0.8;
+  
+  // Create node material
+  const nodeMaterial = new BABYLON.NodeMaterial("nodeMat");
+  nodeMaterial.mode = BABYLON.NodeMaterialModes.Material;
+
+  const position = new BABYLON.InputBlock("position");
+  position.visibleInInspector = false;
+  position.visibleOnFrame = false;
+  position.target = 1;
+  position.setAsAttribute("position");
+
+  const WorldPos = new BABYLON.TransformBlock("WorldPos");
+  WorldPos.visibleInInspector = false;
+  WorldPos.visibleOnFrame = false;
+  WorldPos.target = 1;
+  WorldPos.complementZ = 0;
+  WorldPos.complementW = 1;
+
+  const World = new BABYLON.InputBlock("World");
+  World.visibleInInspector = false;
+  World.visibleOnFrame = false;
+  World.target = 1;
+  World.setAsSystemValue(BABYLON.NodeMaterialSystemValues.World);
+
+  const WorldPosViewProjectionTransform = new BABYLON.TransformBlock("WorldPos * ViewProjectionTransform");
+  WorldPosViewProjectionTransform.visibleInInspector = false;
+  WorldPosViewProjectionTransform.visibleOnFrame = false;
+  WorldPosViewProjectionTransform.target = 1;
+  WorldPosViewProjectionTransform.complementZ = 0;
+  WorldPosViewProjectionTransform.complementW = 1;
+
+  const ViewProjection = new BABYLON.InputBlock("ViewProjection");
+  ViewProjection.visibleInInspector = false;
+  ViewProjection.visibleOnFrame = false;
+  ViewProjection.target = 1;
+  ViewProjection.setAsSystemValue(BABYLON.NodeMaterialSystemValues.ViewProjection);
+
+  const VertexOutput = new BABYLON.VertexOutputBlock("VertexOutput");
+  VertexOutput.visibleInInspector = false;
+  VertexOutput.visibleOnFrame = false;
+  VertexOutput.target = 1;
+
+  const color = new BABYLON.InputBlock("color");
+  color.visibleInInspector = true;
+  color.visibleOnFrame = false;
+  color.target = 1;
+  color.value = new BABYLON.Color4(0.8, 0.8, 0.8, 1);
+  color.isConstant = false;
+
+  const FragmentOutput = new BABYLON.FragmentOutputBlock("FragmentOutput");
+  FragmentOutput.visibleInInspector = false;
+  FragmentOutput.visibleOnFrame = false;
+  FragmentOutput.target = 2;
+  FragmentOutput.convertToGammaSpace = false;
+  FragmentOutput.convertToLinearSpace = false;
+  FragmentOutput.useLogarithmicDepth = false;
+
+  position.output.connectTo(WorldPos.vector);
+  World.output.connectTo(WorldPos.transform);
+  WorldPos.output.connectTo(WorldPosViewProjectionTransform.vector);
+  ViewProjection.output.connectTo(WorldPosViewProjectionTransform.transform);
+  WorldPosViewProjectionTransform.output.connectTo(VertexOutput.vector);
+  color.output.connectTo(FragmentOutput.rgba);
+
+  nodeMaterial.addOutputNode(VertexOutput);
+  nodeMaterial.addOutputNode(FragmentOutput);
+  nodeMaterial.build();
+
+  showError('Loading model...');
+  BABYLON.SceneLoader.ImportMesh("", "assets/models/", "trashcan.glb", scene, function(meshes) {
+    showError('Model loaded: ' + meshes.length + ' meshes');
+    if (meshes.length > 0) {
+      const model = meshes[0];
+      model.material = nodeMaterial;
+      model.scaling = new BABYLON.Vector3(2, 2, 2);
+      model.position = new BABYLON.Vector3(0, 0, 0);
+    }
+  }, null, function(error) {
+    showError('Model load FAILED: ' + JSON.stringify(error));
+    // Create fallback box
+    const box = BABYLON.MeshBuilder.CreateBox("box", {size: 3}, scene);
+    box.material = nodeMaterial;
+    box.position = new BABYLON.Vector3(0, 0, 0);
+    showError('Created fallback box');
+  });
+
   window.addEventListener('resize', () => {
     engine.resize();
   });
-  
-  // Main game loop
+
   engine.runRenderLoop(() => {
-    splashScene.render();
+    scene.render();
   });
+
+  showError('Running! Meshes: ' + scene.meshes.length);
   
-  console.log('Grid Racing initialized - Render loop started');
 } catch (error) {
-  console.error('Error initializing Grid Racing:', error);
-  console.error('Stack:', error.stack);
-  
-  // Display error on page
-  const errorDiv = document.createElement('div');
-  errorDiv.style.color = '#ff0000';
-  errorDiv.style.padding = '20px';
-  errorDiv.style.fontFamily = 'monospace';
-  errorDiv.innerHTML = `ERROR: ${error.message}`;
-  document.body.appendChild(errorDiv);
+  showError('MAIN ERROR: ' + error.message);
+  if (error.stack) showError(error.stack);
 }
