@@ -2,17 +2,24 @@
 
 export function createSplashScene(engine, canvas) {
   const scene = new BABYLON.Scene(engine);
-  scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.1, 1);
+  scene.clearColor = new BABYLON.Color4(0.2, 0.2, 0.2, 1);
+  scene.collisionsEnabled = true;
   
-  // Setup camera
-  const camera = new BABYLON.UniversalCamera("splashCamera", new BABYLON.Vector3(0, 5, -15));
+  // Setup camera with better positioning
+  const camera = new BABYLON.UniversalCamera("splashCamera", new BABYLON.Vector3(0, 2, -8));
   camera.attachControl(canvas, true);
   camera.inertia = 0.7;
   camera.angularSensibility = 1000;
+  camera.minZ = 0.1;
+  camera.maxZ = 1000;
   
-  // Basic lighting
-  const light = new BABYLON.HemisphericLight("splashLight", new BABYLON.Vector3(0, 1, 0), scene);
-  light.intensity = 0.8;
+  // Improve lighting
+  const light1 = new BABYLON.HemisphericLight("splashLight1", new BABYLON.Vector3(0, 1, 0), scene);
+  light1.intensity = 1.2;
+  light1.specular = new BABYLON.Color3(1, 1, 1);
+  
+  const light2 = new BABYLON.PointLight("splashLight2", new BABYLON.Vector3(5, 5, 5), scene);
+  light2.intensity = 0.8;
 
   // Create Node Material for background model
   const nodeMaterial = new BABYLON.NodeMaterial("nodeMat");
