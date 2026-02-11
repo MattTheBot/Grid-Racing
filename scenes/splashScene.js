@@ -91,7 +91,7 @@ export function createSplashScene(engine, canvas) {
   nodeMaterial.addOutputNode(FragmentOutput);
   nodeMaterial.build();
 
-  // Load background model
+  // Load background model (adjust path based on your actual model location)
   BABYLON.SceneLoader.ImportMesh("", "assets/models/", "trashcan.glb", scene, function(meshes) {
     if (meshes.length > 0) {
       const backgroundModel = meshes[0];
@@ -101,6 +101,12 @@ export function createSplashScene(engine, canvas) {
       backgroundModel.scaling = new BABYLON.Vector3(10, 10, 10);
       backgroundModel.position = new BABYLON.Vector3(0, 0, 0);
     }
+  }, null, function(error) {
+    console.error("Failed to load model:", error);
+    // Create a fallback box if model fails
+    const fallbackBox = BABYLON.MeshBuilder.CreateBox("fallbackBox", {size: 5}, scene);
+    fallbackBox.material = nodeMaterial;
+    fallbackBox.position = new BABYLON.Vector3(0, 0, 0);
   });
 
   return scene;
