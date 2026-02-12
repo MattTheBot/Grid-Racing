@@ -121,7 +121,7 @@ try {
       model.position = new BABYLON.Vector3(0, 0, 0);
     }
   }, null, function(error) {
-    showError('Model load FAILED: ' + JSON.stringify(error));
+    showError('Model load FAILED: ' + (error.message || error));
     // Create fallback box
     const box = BABYLON.MeshBuilder.CreateBox("box", {size: 3}, scene);
     box.material = nodeMaterial;
