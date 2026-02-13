@@ -6,7 +6,7 @@ function showError(msg) {
     errDiv.style.display = 'block';
     errDiv.innerHTML += msg + '<br/>';
   }
-  console.error(msg);
+  console.log(msg);
 }
 
 window.onerror = function(msg, url, lineNo, colNo, error) {
@@ -59,15 +59,17 @@ try {
     boxMaterial.diffuse = new BABYLON.Color3(0.3, 0.3, 0.4);
     boxMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
     box.material = boxMaterial;
-    box.position.z = 5;
+    box.position.z = 0;  // Camera is at -8, so 0 means facing it
+    box.position.y = 0;
     
-    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 3}, scene);
+    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 4}, scene);
     const sphereMaterial = new BABYLON.StandardMaterial("sphereMat", scene);
     sphereMaterial.diffuse = new BABYLON.Color3(0.9, 0.6, 0.2);
     sphereMaterial.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
     sphere.material = sphereMaterial;
-    sphere.position = new BABYLON.Vector3(0, 1, 0);
+    sphere.position = new BABYLON.Vector3(3, 2, -2);
     showError('Fallback scene created');
+  }
   }
   
   // Create simple color material instead of complex NodeMaterial
