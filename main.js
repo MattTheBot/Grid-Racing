@@ -36,6 +36,8 @@ try {
   showError('Setting up camera...');
   const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 2, -8));
   camera.attachControl(canvas, true);
+  camera.angularSensibility = 1000; // Slower rotation
+  camera.inertia = 0.7; // Smooth motion
   
   showError('Adding lights...');
   const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
@@ -129,8 +131,10 @@ try {
   }, function(progress) {
     // showError('Loading progress: ' + Math.round(progress.loaded / progress.total * 100) + '%');
   }, function(error) {
+    console.error('Model load error object:', error);
     showError('Model load FAILED: ' + (error.message || error.toString()));
     showError('Error details: code=' + (error.code || 'none') + ', name=' + (error.name || 'none'));
+    showError('Try uploading a new GLB file or check assets/models/ folder');
     // Create fallback box with StandardMaterial
     const box = BABYLON.MeshBuilder.CreateBox("box", {size: 3}, scene);
     
