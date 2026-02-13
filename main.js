@@ -51,6 +51,24 @@ try {
   const light3 = new BABYLON.PointLight("light3", new BABYLON.Vector3(-5, 5, -5), scene);
   light3.intensity = 0.7;
   light3.range = 50;
+
+  // Fallback geometry creator
+  function createFallback() {
+    const box = BABYLON.MeshBuilder.CreateBox("box", {size: 20}, scene);
+    const boxMaterial = new BABYLON.StandardMaterial("fallbackMat", scene);
+    boxMaterial.diffuse = new BABYLON.Color3(0.3, 0.3, 0.4);
+    boxMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    box.material = boxMaterial;
+    box.position.z = 5;
+    
+    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 3}, scene);
+    const sphereMaterial = new BABYLON.StandardMaterial("sphereMat", scene);
+    sphereMaterial.diffuse = new BABYLON.Color3(0.9, 0.6, 0.2);
+    sphereMaterial.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+    sphere.material = sphereMaterial;
+    sphere.position = new BABYLON.Vector3(0, 1, 0);
+    showError('Fallback scene created');
+  }
   
   // Create simple color material instead of complex NodeMaterial
   const simpleMaterial = new BABYLON.StandardMaterial("simpleMat", scene);
@@ -59,51 +77,50 @@ try {
   simpleMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
 
   showError('Loading model...');
-  BABYLON.SceneLoader.ImportMesh("", "assets/models/", "scene.gltf", scene, function(meshes, particleSystems, skeletons, animationGroups) {
-    showError('Model loaded: ' + meshes.length + ' meshes');
-    
-    // Filter out null/empty meshes
-    const validMeshes = meshes.filter(m => m !== null && m !== undefined);
-    
-    if (validMeshes.length > 0) {
-      validMeshes.forEach(mesh => {
-        if (mesh.name) {
-          showError('Mesh: ' + mesh.name);
+  
+  // First try to load the gltf raw to check its status
+  fetch("assets/models/scene.gltf")
+    .then(r => {
+      showError('GLTF fetch status: ' + r.status);
+      return r.json();
+    })
+    .then(gltfData => {
+      showError('GLTF loaded: ' + (gltfData.meshes ? gltfData.meshes.length + ' meshes' : 'no meshes'));
+      showError('GLTF nodes: ' + (gltfData.nodes ? gltfData.nodes.length : 'none'));
+      showError('GLTF scenes: ' + (gltfData.scenes ? gltfData.scenes.length : 'none'));
+      
+      // Now try babylon loader
+      BABYLON.SceneLoader.ImportMesh("", "assets/models/", "scene.gltf", scene, 
+        function(meshes, particleSystems, skeletons, animationGroups) {
+          showError('ImportMesh success: ' + meshes.length + ' meshes loaded');
+          if (meshes.length > 0) {
+            meshes.forEach((m, i) => {
+              if (m && m.name) showError('Mesh ' + i + ': ' + m.name);
+            });
+          }
+        }, 
+        function(progress) {
+          if (progress.lengthComputable) {
+            showError('Load: ' + Math.round(progress.loaded / progress.total * 100) + '%');
+          }
+        }, 
+        function(error) {
+          let errorMsg = 'Unknown error';
+          if (error && error.message) errorMsg = error.message;
+          else if (error && error.toString) errorMsg = error.toString();
+          
+          console.error('ImportMesh error:', error);
+          showError('BABYLON ImportMesh failed: ' + errorMsg);
+          showError('Creating fallback scene');
+          createFallback();
         }
-      });
-      showError('Model ready!');
-    } else {
-      showError('WARNING: No valid meshes found');
-    }
-  }, function(progress) {
-    if (progress.lengthComputable) {
-      const percent = Math.round(progress.loaded / progress.total * 100);
-      showError('Loading: ' + percent + '%');
-    }
-  }, function(error) {
-    console.error('Model error:', error);
-    showError('Model load FAILED - checking for missing files...');
-    showError('Make sure scene.bin is in assets/models/ folder');
-    showError('Creating fallback geometry instead');
-    
-    // Create fallback: larger box to act as background
-    const box = BABYLON.MeshBuilder.CreateBox("box", {size: 20}, scene);
-    const boxMaterial = new BABYLON.StandardMaterial("fallbackMat", scene);
-    boxMaterial.diffuse = new BABYLON.Color3(0.3, 0.3, 0.4);
-    boxMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-    box.material = boxMaterial;
-    box.position.z = 5;
-    
-    // Add a sphere for interest
-    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 3}, scene);
-    const sphereMaterial = new BABYLON.StandardMaterial("sphereMat", scene);
-    sphereMaterial.diffuse = new BABYLON.Color3(0.9, 0.6, 0.2);
-    sphereMaterial.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-    sphere.material = sphereMaterial;
-    sphere.position = new BABYLON.Vector3(0, 1, 0);
-    
-    showError('Fallback scene created');
-  });
+      );
+    })
+    .catch(err => {
+      showError('Failed to fetch gltf: ' + err.message);
+      showError('Check if assets/models/scene.gltf exists');
+      createFallback();
+    });
 
   window.addEventListener('resize', () => {
     engine.resize();
