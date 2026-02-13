@@ -39,10 +39,16 @@ try {
   
   showError('Adding lights...');
   const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-  light1.intensity = 1.2;
+  light1.intensity = 1.0;
+  light1.groundColor = new BABYLON.Color3(0.5, 0.5, 0.5);
   
   const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(5, 5, 5), scene);
-  light2.intensity = 0.8;
+  light2.intensity = 1.0;
+  light2.range = 50;
+  
+  const light3 = new BABYLON.PointLight("light3", new BABYLON.Vector3(-5, 5, -5), scene);
+  light3.intensity = 0.7;
+  light3.range = 50;
   
   // Create node material
   const nodeMaterial = new BABYLON.NodeMaterial("nodeMat");
@@ -120,11 +126,22 @@ try {
       model.scaling = new BABYLON.Vector3(2, 2, 2);
       model.position = new BABYLON.Vector3(0, 0, 0);
     }
-  }, null, function(error) {
-    showError('Model load FAILED: ' + (error.message || error));
-    // Create fallback box
+  }, function(progress) {
+    // showError('Loading progress: ' + Math.round(progress.loaded / progress.total * 100) + '%');
+  }, function(error) {
+    showError('Model load FAILED: ' + (error.message || error.toString()));
+    showError('Error details: code=' + (error.code || 'none') + ', name=' + (error.name || 'none'));
+    // Create fallback box with StandardMaterial
     const box = BABYLON.MeshBuilder.CreateBox("box", {size: 3}, scene);
-    box.material = nodeMaterial;
+    
+    // Create a better material for the box
+    const boxMaterial = new BABYLON.StandardMaterial("fallbackMat", scene);
+    boxMaterial.diffuse = new BABYLON.Color3(0.8, 0.8, 0.8);
+    boxMaterial.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    boxMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    boxMaterial.wireframe = false;
+    box.material = boxMaterial;
+    
     box.position = new BABYLON.Vector3(0, 0, 0);
     showError('Created fallback box');
   });
