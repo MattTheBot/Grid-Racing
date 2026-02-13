@@ -1,3 +1,6 @@
+import { switchScene } from "../main.js";
+import { createGarageScene } from "./garageScene.js";
+
 export function createSplashScene(engine) {
     const scene = new BABYLON.Scene(engine);
 
@@ -32,6 +35,21 @@ export function createSplashScene(engine) {
         { width: 6, height: 6 },
         scene
     );
+
+    // GUI BUTTON → Go to Garage
+    const ui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+    const startBtn = BABYLON.GUI.Button.CreateSimpleButton("start", "Enter Garage");
+    startBtn.width = "200px";
+    startBtn.height = "60px";
+    startBtn.color = "white";
+    startBtn.background = "black";
+
+    startBtn.onPointerUpObservable.add(() => {
+        switchScene(createGarageScene(engine));
+    });
+
+    ui.addControl(startBtn);
 
     return scene;
 }
