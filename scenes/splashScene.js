@@ -2,6 +2,8 @@ import { switchScene } from "../main.js";
 import { createGarageScene } from "./garageScene.js";
 
 export function createSplashScene(engine) {
+    document.getElementById("debug").innerText = "Splash scene created";
+
     const scene = new BABYLON.Scene(engine);
 
     // CAMERA
