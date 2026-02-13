@@ -52,96 +52,28 @@ try {
   light3.intensity = 0.7;
   light3.range = 50;
   
-  // Create node material
-  const nodeMaterial = new BABYLON.NodeMaterial("nodeMat");
-  nodeMaterial.mode = BABYLON.NodeMaterialModes.Material;
-
-  const position = new BABYLON.InputBlock("position");
-  position.visibleInInspector = false;
-  position.visibleOnFrame = false;
-  position.target = 1;
-  position.setAsAttribute("position");
-
-  const WorldPos = new BABYLON.TransformBlock("WorldPos");
-  WorldPos.visibleInInspector = false;
-  WorldPos.visibleOnFrame = false;
-  WorldPos.target = 1;
-  WorldPos.complementZ = 0;
-  WorldPos.complementW = 1;
-
-  const World = new BABYLON.InputBlock("World");
-  World.visibleInInspector = false;
-  World.visibleOnFrame = false;
-  World.target = 1;
-  World.setAsSystemValue(BABYLON.NodeMaterialSystemValues.World);
-
-  const WorldPosViewProjectionTransform = new BABYLON.TransformBlock("WorldPos * ViewProjectionTransform");
-  WorldPosViewProjectionTransform.visibleInInspector = false;
-  WorldPosViewProjectionTransform.visibleOnFrame = false;
-  WorldPosViewProjectionTransform.target = 1;
-  WorldPosViewProjectionTransform.complementZ = 0;
-  WorldPosViewProjectionTransform.complementW = 1;
-
-  const ViewProjection = new BABYLON.InputBlock("ViewProjection");
-  ViewProjection.visibleInInspector = false;
-  ViewProjection.visibleOnFrame = false;
-  ViewProjection.target = 1;
-  ViewProjection.setAsSystemValue(BABYLON.NodeMaterialSystemValues.ViewProjection);
-
-  const VertexOutput = new BABYLON.VertexOutputBlock("VertexOutput");
-  VertexOutput.visibleInInspector = false;
-  VertexOutput.visibleOnFrame = false;
-  VertexOutput.target = 1;
-
-  const color = new BABYLON.InputBlock("color");
-  color.visibleInInspector = true;
-  color.visibleOnFrame = false;
-  color.target = 1;
-  color.value = new BABYLON.Color4(0.8, 0.8, 0.8, 1);
-  color.isConstant = false;
-
-  const FragmentOutput = new BABYLON.FragmentOutputBlock("FragmentOutput");
-  FragmentOutput.visibleInInspector = false;
-  FragmentOutput.visibleOnFrame = false;
-  FragmentOutput.target = 2;
-  FragmentOutput.convertToGammaSpace = false;
-  FragmentOutput.convertToLinearSpace = false;
-  FragmentOutput.useLogarithmicDepth = false;
-
-  position.output.connectTo(WorldPos.vector);
-  World.output.connectTo(WorldPos.transform);
-  WorldPos.output.connectTo(WorldPosViewProjectionTransform.vector);
-  ViewProjection.output.connectTo(WorldPosViewProjectionTransform.transform);
-  WorldPosViewProjectionTransform.output.connectTo(VertexOutput.vector);
-  color.output.connectTo(FragmentOutput.rgba);
-
-  nodeMaterial.addOutputNode(VertexOutput);
-  nodeMaterial.addOutputNode(FragmentOutput);
-  nodeMaterial.build();
+  // Create simple color material instead of complex NodeMaterial
+  const simpleMaterial = new BABYLON.StandardMaterial("simpleMat", scene);
+  simpleMaterial.diffuse = new BABYLON.Color3(0.8, 0.8, 0.8);
+  simpleMaterial.specularColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+  simpleMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
 
   showError('Loading model...');
   BABYLON.SceneLoader.ImportMesh("", "assets/models/", "scene.gltf", scene, function(meshes, particleSystems, skeletons, animationGroups) {
     showError('Model loaded: ' + meshes.length + ' meshes');
     
-    // Filter out null/empty meshes and find the first valid one
+    // Filter out null/empty meshes
     const validMeshes = meshes.filter(m => m !== null && m !== undefined);
     
     if (validMeshes.length > 0) {
-      // Apply material to all meshes or just the first one
       validMeshes.forEach(mesh => {
-        try {
-          if (mesh.name) {
-            showError('Processing mesh: ' + mesh.name);
-          }
-          // Don't override material if it looks good, but scale and position
-          mesh.scaling = new BABYLON.Vector3(1, 1, 1);
-        } catch (e) {
-          console.error('Error processing mesh:', e);
+        if (mesh.name) {
+          showError('Mesh: ' + mesh.name);
         }
       });
-      showError('Model setup complete');
+      showError('Model ready!');
     } else {
-      showError('WARNING: No valid meshes found in model');
+      showError('WARNING: No valid meshes found');
     }
   }, function(progress) {
     if (progress.lengthComputable) {
@@ -149,23 +81,28 @@ try {
       showError('Loading: ' + percent + '%');
     }
   }, function(error) {
-    console.error('Model load error object:', error);
-    showError('Model load FAILED: ' + (error.message || error.toString()));
-    showError('Error details: code=' + (error.code || 'none') + ', name=' + (error.name || 'none'));
-    showError('Sketchfab models work fine - check browser console for details');
-    // Create fallback box with StandardMaterial
-    const box = BABYLON.MeshBuilder.CreateBox("box", {size: 3}, scene);
+    console.error('Model error:', error);
+    showError('Model load FAILED - checking for missing files...');
+    showError('Make sure scene.bin is in assets/models/ folder');
+    showError('Creating fallback geometry instead');
     
-    // Create a better material for the box
+    // Create fallback: larger box to act as background
+    const box = BABYLON.MeshBuilder.CreateBox("box", {size: 20}, scene);
     const boxMaterial = new BABYLON.StandardMaterial("fallbackMat", scene);
-    boxMaterial.diffuse = new BABYLON.Color3(0.8, 0.8, 0.8);
-    boxMaterial.specularColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-    boxMaterial.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.1);
-    boxMaterial.wireframe = false;
+    boxMaterial.diffuse = new BABYLON.Color3(0.3, 0.3, 0.4);
+    boxMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
     box.material = boxMaterial;
+    box.position.z = 5;
     
-    box.position = new BABYLON.Vector3(0, 0, 0);
-    showError('Created fallback box');
+    // Add a sphere for interest
+    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 3}, scene);
+    const sphereMaterial = new BABYLON.StandardMaterial("sphereMat", scene);
+    sphereMaterial.diffuse = new BABYLON.Color3(0.9, 0.6, 0.2);
+    sphereMaterial.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+    sphere.material = sphereMaterial;
+    sphere.position = new BABYLON.Vector3(0, 1, 0);
+    
+    showError('Fallback scene created');
   });
 
   window.addEventListener('resize', () => {
