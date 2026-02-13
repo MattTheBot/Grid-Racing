@@ -120,21 +120,39 @@ try {
   nodeMaterial.build();
 
   showError('Loading model...');
-  BABYLON.SceneLoader.ImportMesh("", "assets/models/", "trashcan.glb", scene, function(meshes) {
+  BABYLON.SceneLoader.ImportMesh("", "assets/models/", "scene.gltf", scene, function(meshes, particleSystems, skeletons, animationGroups) {
     showError('Model loaded: ' + meshes.length + ' meshes');
-    if (meshes.length > 0) {
-      const model = meshes[0];
-      model.material = nodeMaterial;
-      model.scaling = new BABYLON.Vector3(2, 2, 2);
-      model.position = new BABYLON.Vector3(0, 0, 0);
+    
+    // Filter out null/empty meshes and find the first valid one
+    const validMeshes = meshes.filter(m => m !== null && m !== undefined);
+    
+    if (validMeshes.length > 0) {
+      // Apply material to all meshes or just the first one
+      validMeshes.forEach(mesh => {
+        try {
+          if (mesh.name) {
+            showError('Processing mesh: ' + mesh.name);
+          }
+          // Don't override material if it looks good, but scale and position
+          mesh.scaling = new BABYLON.Vector3(1, 1, 1);
+        } catch (e) {
+          console.error('Error processing mesh:', e);
+        }
+      });
+      showError('Model setup complete');
+    } else {
+      showError('WARNING: No valid meshes found in model');
     }
   }, function(progress) {
-    // showError('Loading progress: ' + Math.round(progress.loaded / progress.total * 100) + '%');
+    if (progress.lengthComputable) {
+      const percent = Math.round(progress.loaded / progress.total * 100);
+      showError('Loading: ' + percent + '%');
+    }
   }, function(error) {
     console.error('Model load error object:', error);
     showError('Model load FAILED: ' + (error.message || error.toString()));
     showError('Error details: code=' + (error.code || 'none') + ', name=' + (error.name || 'none'));
-    showError('Try uploading a new GLB file or check assets/models/ folder');
+    showError('Sketchfab models work fine - check browser console for details');
     // Create fallback box with StandardMaterial
     const box = BABYLON.MeshBuilder.CreateBox("box", {size: 3}, scene);
     
