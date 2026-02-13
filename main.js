@@ -1,6 +1,22 @@
-/* CLEARED: main.js reset as requested */
-// Project structure retained. Add new application code here.
-// This file intentionally contains no runtime code.
+import { createSplashScene } from "./scenes/splashScene.js";
+import { createGarageScene } from "./scenes/garageScene.js";
+import { createRaceScene } from "./scenes/raceScene.js";
 
-// Example placeholder to avoid module errors when importing:
-export default {};
+const canvas = document.getElementById("renderCanvas");
+const engine = new BABYLON.Engine(canvas, true);
+
+let currentScene = createSplashScene(engine);
+
+engine.runRenderLoop(() => {
+    currentScene.render();
+});
+
+window.addEventListener("resize", () => {
+    engine.resize();
+});
+
+// Scene switching helper
+export function switchScene(newScene) {
+    currentScene.dispose();
+    currentScene = newScene;
+}
